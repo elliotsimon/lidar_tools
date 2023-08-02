@@ -105,35 +105,35 @@ def collate_format(lidar, offsets, outpath):
     df = df[df['SS'].notna()]
 
     # Force conversion to int to remove trailing decimals, then force conversion to str to comply with datetime formatter
-    df['YY'] = df['YY'].astype(int).astype(str)
-    df['MT'] = df['MT'].astype(int).astype(str)
-    df['DD'] = df['DD'].astype(int).astype(str)
-    df['HH'] = df['HH'].astype(int).astype(str)
-    df['MM'] = df['MM'].astype(int).astype(str)
-    df['SS'] = df['SS'].astype(int).astype(str)
-    # Convert to microseconds to use with pd.to_datetime
-    # Realtime clock from computer
-    df['RTC_US'] = (df['RTC_MS'] * 1000).astype(int).astype(str)
+
+    df['YY'] = df['YY'].astype(int).astype(str).apply(lambda x: x.zfill(4))
+    df['MT'] = df['MT'].astype(int).astype(str).apply(lambda x: x.zfill(2))
+    df['DD'] = df['DD'].astype(int).astype(str).apply(lambda x: x.zfill(2))
+    df['HH'] = df['HH'].astype(int).astype(str).apply(lambda x: x.zfill(2))
+    df['MM'] = df['MM'].astype(int).astype(str).apply(lambda x: x.zfill(2))
+    df['SS'] = df['SS'].astype(int).astype(str).apply(lambda x: x.zfill(2))
+    # Milliseconds must be converted to microseconds and zero-padded to use with to_datetime() %f string formatter
+    df['US'] = (df['RTC_MS']*1000).astype(int).astype(str).apply(lambda x: x.zfill(6))
 
     # Build datetime string from clock channels
     df['dt'] = pd.to_datetime(df['YY'] + '-' + df['MT'] + '-' + df['DD'] + ' ' +
                               df['HH'] + ':' + df['MM'] + ':' +
-                              df['SS'] + ':' + df['RTC_US'],
+                              df['SS'] + ':' + df['US'],
                               format='%Y-%m-%d %H:%M:%S:%f')
+
     df.set_index(df['dt'], inplace=True)
 
     # Delete unneeded columns to save space
     del df['dt']
-    del df['RTC_US']
     del df['YY']
     del df['MT']
     del df['DD']
     del df['HH']
     del df['MM']
     del df['SS']
+    del df['US']
 
     print('Final DataFrame shape = ' + str(df.shape))
-    #print(df.head())
 
     return df
 
